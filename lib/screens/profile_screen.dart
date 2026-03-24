@@ -25,6 +25,235 @@ class ProfileScreen extends StatelessWidget {
     );
   }
 
+  // ── Edit: Date of Birth ──
+  Future<void> _editDateOfBirth(
+      BuildContext context, JyotiProvider provider) async {
+    final current = provider.user.dateOfBirth;
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: current,
+      firstDate: DateTime(1900),
+      lastDate: DateTime.now(),
+      builder: (ctx, child) => Theme(
+        data: Theme.of(ctx).copyWith(
+          colorScheme: const ColorScheme.dark(
+            primary: JyotiTheme.gold,
+            onPrimary: Color(0xFF1A1A2E),
+            surface: JyotiTheme.surface,
+            onSurface: JyotiTheme.textPrimary,
+          ),
+          dialogBackgroundColor: JyotiTheme.surface,
+        ),
+        child: child!,
+      ),
+    );
+    if (picked != null) {
+      HapticFeedback.selectionClick();
+      provider.setDateOfBirth(picked);
+    }
+  }
+
+  // ── Edit: Time of Birth ──
+  Future<void> _editTimeOfBirth(
+      BuildContext context, JyotiProvider provider) async {
+    final current = provider.user.timeOfBirth;
+    // Parse existing time if possible
+    TimeOfDay initial = TimeOfDay.now();
+    try {
+      final parts = current.replaceAll(' AM', '').replaceAll(' PM', '').split(':');
+      int hour = int.parse(parts[0]);
+      final int minute = int.parse(parts[1]);
+      if (current.contains('PM') && hour != 12) hour += 12;
+      if (current.contains('AM') && hour == 12) hour = 0;
+      initial = TimeOfDay(hour: hour, minute: minute);
+    } catch (_) {}
+
+    final picked = await showTimePicker(
+      context: context,
+      initialTime: initial,
+      builder: (ctx, child) => Theme(
+        data: Theme.of(ctx).copyWith(
+          colorScheme: const ColorScheme.dark(
+            primary: JyotiTheme.gold,
+            onPrimary: Color(0xFF1A1A2E),
+            surface: JyotiTheme.surface,
+            onSurface: JyotiTheme.textPrimary,
+          ),
+          dialogBackgroundColor: JyotiTheme.surface,
+        ),
+        child: child!,
+      ),
+    );
+    if (picked != null) {
+      HapticFeedback.selectionClick();
+      final hour = picked.hourOfPeriod == 0 ? 12 : picked.hourOfPeriod;
+      final minute = picked.minute.toString().padLeft(2, '0');
+      final period = picked.period == DayPeriod.am ? 'AM' : 'PM';
+      provider.setTimeOfBirth('$hour:$minute $period');
+    }
+  }
+
+  // ── Edit: Place of Birth ──
+  void _editPlaceOfBirth(BuildContext context, JyotiProvider provider) {
+    final controller =
+        TextEditingController(text: provider.user.placeOfBirth);
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: JyotiTheme.surface,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(JyotiTheme.radiusLg),
+        ),
+        title: const Text(
+          'Place of Birth',
+          style: TextStyle(
+            color: JyotiTheme.textPrimary,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        content: TextField(
+          controller: controller,
+          autofocus: true,
+          style: const TextStyle(color: JyotiTheme.textPrimary),
+          cursorColor: JyotiTheme.gold,
+          decoration: InputDecoration(
+            hintText: 'e.g. Delhi, Mumbai, Bangalore',
+            hintStyle: const TextStyle(color: JyotiTheme.textSubtle),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(JyotiTheme.radiusMd),
+              borderSide: const BorderSide(color: JyotiTheme.border),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(JyotiTheme.radiusMd),
+              borderSide: const BorderSide(color: JyotiTheme.gold, width: 1.5),
+            ),
+            filled: true,
+            fillColor: JyotiTheme.surfaceVariant,
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text(
+              'Cancel',
+              style: TextStyle(color: JyotiTheme.textMuted),
+            ),
+          ),
+          TextButton(
+            onPressed: () {
+              final val = controller.text.trim();
+              if (val.isNotEmpty) {
+                HapticFeedback.selectionClick();
+                provider.setPlaceOfBirth(val);
+              }
+              Navigator.pop(ctx);
+            },
+            child: const Text(
+              'Save',
+              style: TextStyle(
+                color: JyotiTheme.gold,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ── Edit: Nakshatra ──
+  void _editNakshatra(
+      BuildContext context, JyotiProvider provider) {
+    const nakshatras = [
+      'Ashwini', 'Bharani', 'Krittika', 'Rohini', 'Mrigashirsha',
+      'Ardra', 'Punarvasu', 'Pushya', 'Ashlesha', 'Magha',
+      'Purva Phalguni', 'Uttara Phalguni', 'Hasta', 'Chitra', 'Swati',
+      'Vishakha', 'Anuradha', 'Jyeshtha', 'Mula', 'Purva Ashadha',
+      'Uttara Ashadha', 'Shravana', 'Dhanishtha', 'Shatabhisha',
+      'Purva Bhadrapada', 'Uttara Bhadrapada', 'Revati',
+    ];
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: JyotiTheme.surface,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(JyotiTheme.radiusXl)),
+      ),
+      builder: (ctx) {
+        return DraggableScrollableSheet(
+          expand: false,
+          initialChildSize: 0.6,
+          maxChildSize: 0.85,
+          builder: (_, scrollController) => Column(
+            children: [
+              const SizedBox(height: JyotiTheme.spacingMd),
+              Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: JyotiTheme.border,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              const SizedBox(height: JyotiTheme.spacingMd),
+              const Text(
+                'Select Nakshatra',
+                style: TextStyle(
+                  color: JyotiTheme.textPrimary,
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              const SizedBox(height: JyotiTheme.spacingSm),
+              Expanded(
+                child: ListView.builder(
+                  controller: scrollController,
+                  itemCount: nakshatras.length,
+                  itemBuilder: (_, index) {
+                    final n = nakshatras[index];
+                    final isSelected = provider.user.nakshatra == n;
+                    return ListTile(
+                      leading: Text(
+                        '⭐',
+                        style: TextStyle(
+                          fontSize: 18,
+                          color: isSelected
+                              ? JyotiTheme.gold
+                              : JyotiTheme.textSubtle,
+                        ),
+                      ),
+                      title: Text(
+                        n,
+                        style: TextStyle(
+                          color: isSelected
+                              ? JyotiTheme.gold
+                              : JyotiTheme.textPrimary,
+                          fontWeight: isSelected
+                              ? FontWeight.w600
+                              : FontWeight.w400,
+                        ),
+                      ),
+                      trailing: isSelected
+                          ? const Icon(Icons.check_circle_rounded,
+                              color: JyotiTheme.gold)
+                          : null,
+                      onTap: () {
+                        HapticFeedback.selectionClick();
+                        provider.setNakshatra(n);
+                        Navigator.pop(ctx);
+                      },
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -178,25 +407,25 @@ class ProfileScreen extends StatelessWidget {
                           title: 'Date of Birth',
                           value:
                               '${user.dateOfBirth.day}/${user.dateOfBirth.month}/${user.dateOfBirth.year}',
-                          onTap: () => _showUnderWorking(context),
+                          onTap: () => _editDateOfBirth(context, provider),
                         ),
                         _SettingItem(
                           icon: Icons.access_time_rounded,
                           title: 'Time of Birth',
                           value: user.timeOfBirth,
-                          onTap: () => _showUnderWorking(context),
+                          onTap: () => _editTimeOfBirth(context, provider),
                         ),
                         _SettingItem(
                           icon: Icons.location_on_outlined,
                           title: 'Place of Birth',
                           value: user.placeOfBirth,
-                          onTap: () => _showUnderWorking(context),
+                          onTap: () => _editPlaceOfBirth(context, provider),
                         ),
                         _SettingItem(
                           icon: Icons.auto_awesome_rounded,
                           title: 'Nakshatra',
                           value: user.nakshatra,
-                          onTap: () => _showUnderWorking(context),
+                          onTap: () => _editNakshatra(context, provider),
                         ),
                       ]),
 

@@ -435,6 +435,29 @@ class JyotiProvider extends ChangeNotifier {
     loadDailyData();
   }
 
+  // ── Kundli Details ──
+  void setDateOfBirth(DateTime dob) {
+    _user = _user.copyWith(dateOfBirth: dob);
+    notifyListeners();
+  }
+
+  void setTimeOfBirth(String time) {
+    _user = _user.copyWith(timeOfBirth: time);
+    notifyListeners();
+  }
+
+  void setPlaceOfBirth(String place) {
+    _user = _user.copyWith(placeOfBirth: place);
+    notifyListeners();
+    // Re-resolve geo for new place
+    _resolveGeoAndLoadData();
+  }
+
+  void setNakshatra(String nakshatra) {
+    _user = _user.copyWith(nakshatra: nakshatra);
+    notifyListeners();
+  }
+
   // ── Sign Out ──
   Future<void> signOut() async {
     // Clear all persisted data (includes daily claimed flag)
